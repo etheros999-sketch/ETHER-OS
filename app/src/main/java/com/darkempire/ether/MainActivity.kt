@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), CONNECTIONS("Connections")
+    HOME("Home"), CHAT("Assistant"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections")
 }
 
 @Composable
@@ -337,6 +337,26 @@ private fun EtherApp() {
                 Spacer(Modifier.height(8.dp))
                 Text("Local prototype only · no AI request is sent", color = TextMuted, fontSize = 11.sp)
             }
+            Screen.CAPABILITIES -> {
+                Text("ETHER CAPABILITIES", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Honest status of what works and what is still being built.", color = TextMuted, fontSize = 12.sp)
+                Spacer(Modifier.height(10.dp))
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    item { CapabilityCard("READY", "Local time and greeting", "Uses the phone's clock and selects a greeting for the current hour.", true) }
+                    item { CapabilityCard("READY", "Voice input", "Requests microphone permission and puts recognised speech into editable text when supported by the device.", true) }
+                    item { CapabilityCard("READY", "Spoken status", "Uses Android text-to-speech to read ETHER's prototype status aloud.", true) }
+                    item { CapabilityCard("IN PROGRESS", "AI conversations", "Real AI is not connected yet; chat currently displays a prototype response.", false) }
+                    item { CapabilityCard("PLANNED", "Free AI provider switching", "Try configured free providers in order, handle limits, and never use paid APIs without approval.", false) }
+                    item { CapabilityCard("PLANNED", "Gmail and Google Calendar", "Connect through official sign-in and permissions before carrying out approved tasks.", false) }
+                    item { CapabilityCard("PLANNED", "YouTube and TikTok", "Authorise each account and add supported publishing and management actions.", false) }
+                    item { CapabilityCard("PLANNED", "Business automation", "Help research, draft content, organise tasks and prepare reports. Purchases and payments remain approval-gated.", false) }
+                    item { CapabilityCard("PLANNED", "Income support", "Support zero-capital business workflows; earnings cannot be guaranteed or created automatically.", false) }
+                }
+            }
             Screen.CONNECTIONS -> {
                 Text("CONNECTION CENTRE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
                 Spacer(Modifier.height(14.dp))
@@ -419,6 +439,24 @@ private fun ConnectionCard(name: String, status: String) {
         ) {
             Text(name, color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.Medium)
             Text(status, color = TextMuted, fontSize = 12.sp)
+        }
+    }
+}
+
+
+@Composable
+private fun CapabilityCard(status: String, title: String, description: String, ready: Boolean) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Panel),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(status, color = if (ready) Cyan else TextMuted, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(description, color = TextMuted, fontSize = 12.sp)
         }
     }
 }
