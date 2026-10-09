@@ -562,12 +562,7 @@ private fun EtherApp() {
                                         try {
                                             videoBlueprint = GeminiClient.generateReply(
                                                 key,
-                                                "Act as ETHER's faceless video-business production planner. Create a practical, original, evidence-aware production package for this niche: " +
-                                                    videoNiche.trim() + ". Required output format: " + videoFormat + ". Publishing targets: " + videoTargets + ". " +
-                                                    "If both long and short are selected, provide a complete 5-8 minute YouTube video package and a separate 30-60 second vertical Short/TikTok cutdown based on the same idea. " +
-                                                    "Include: 3 topic ideas ranked by audience value, title options, opening hook, complete narration script, scene-by-scene visual and B-roll directions, on-screen text, narration tone, " +
-                                                    "caption/subtitle guidance, thumbnail concept and image-generation prompt, description, hashtags, call to action, factual checks, copyright/licensing checks, and a final quality-control checklist. " +
-                                                    "Do not claim that a video file was rendered, exported, uploaded, scheduled, or published. Clearly label this as a production blueprint. Avoid invented facts and suggest checking claims against reliable sources."
+                                                VideoProductionPlanner.buildPrompt(videoNiche, videoFormat, videoTargets)
                                             )
                                         } catch (error: Exception) {
                                             videoBlueprint = error.message ?: "Could not create the blueprint. Please try again."
