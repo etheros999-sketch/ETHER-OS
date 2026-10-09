@@ -13,7 +13,10 @@ A fresh, voice-first personal AI assistant project with a JARVIS-inspired Androi
 ## Current build (Android)
 - Dark home screen with device-local time and time-aware greeting.
 - Voice input using Android speech recognition, plus spoken status using Android text-to-speech.
-- Assistant chat can call Gemini after the user supplies an API key in **AI Setup**.
+- Assistant chat can call Gemini after the user supplies an API key in **AI Setup**; recent turns are sent as conversation context.
+- Messages can be copied to the phone clipboard, and Speak reads the latest ETHER response.
+- The local Business Workspace saves ideas/tasks on the phone and supports marking complete or deleting them.
+- The About screen identifies the creator as Emperor Lucian / Lucian / Alexander Ntow (one person) and Dark Empire Leadership.
 - The API key is encrypted at rest with Android Keystore. A key stored on a mobile device is still less protected than a backend-held secret.
 - AI requests occur only after the user taps Send or Test connection. ETHER does not automatically fall back to paid providers.
 - Capability and connection screens honestly show what is configured versus not yet integrated.
@@ -31,6 +34,7 @@ Do not paste API keys into chat or commit them to GitHub. For a public productio
 - Gmail and Google Calendar OAuth.
 - YouTube and TikTok OAuth/publishing.
 - Full autonomous business execution, scheduling, and cross-provider fallback.
+- Gmail/Calendar/YouTube/TikTok account linking is not implemented yet and will require official app configuration and user authorisation.
 - A trusted backend for production AI credential management.
 
 ## Current status
