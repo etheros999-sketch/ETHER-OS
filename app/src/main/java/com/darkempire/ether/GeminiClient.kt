@@ -12,7 +12,11 @@ internal object GeminiClient {
     private const val ENDPOINT =
         "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent"
 
-    suspend fun generateReply(apiKey: String, prompt: String): String = withContext(Dispatchers.IO) {
+    suspend fun generateReply(
+        apiKey: String,
+        prompt: String,
+        history: List<Pair<String, String>> = emptyList()
+    ): String = withContext(Dispatchers.IO) {
         require(apiKey.isNotBlank()) { "Add your Gemini API key in AI Setup first." }
         require(prompt.isNotBlank()) { "Enter a message first." }
 
@@ -34,11 +38,22 @@ internal object GeminiClient {
             )
             .put(
                 "contents",
-                JSONArray().put(
-                    JSONObject()
-                        .put("role", "user")
-                        .put("parts", JSONArray().put(JSONObject().put("text", prompt)))
-                )
+                JSONArray().apply {
+                    history.takeLast(12).forEach { (role, text) ->
+                        if ((role == "user" || role == "model") && text.isNotBlank()) {
+                            put(
+                                JSONObject()
+                                    .put("role", role)
+                                    .put("parts", JSONArray().put(JSONObject().put("text", text)))
+                            )
+                        }
+                    }
+                    put(
+                        JSONObject()
+                            .put("role", "user")
+                            .put("parts", JSONArray().put(JSONObject().put("text", prompt)))
+                    )
+                }
             )
             .put(
                 "generationConfig",
