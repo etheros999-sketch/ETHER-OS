@@ -515,6 +515,19 @@ private fun EtherApp() {
                         OpportunityInput("Requirements / listing text", opportunityDetails, { opportunityDetails = it }, "Paste the job description and deadline…", minLines = 4)
                     }
                     item {
+                        Button(
+                            onClick = {
+                                val query = if (opportunityTitle.isBlank()) {
+                                    "remote freelance script writing caption writing content creation jobs"
+                                } else {
+                                    "remote freelance ${opportunityTitle.trim()} jobs"
+                                }
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + Uri.encode(query))))
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                        ) { Text("Search public listings") }
+                    }
+                    item {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Button(
                                 onClick = {
@@ -676,7 +689,7 @@ private fun EtherApp() {
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { financeCurrency = "GHS" }, colors = ButtonDefaults.buttonColors(containerColor = if (financeCurrency == "GHS") Cyan else PanelLight, contentColor = if (financeCurrency == "GHS") Night else TextMain)) { Text("GHS ₵") }
-                            Button(onClick = { financeCurrency = "USD" }, colors = ButtonDefaults.buttonColors(containerColor = if (financeCurrency == "USD") Cyan else PanelLight, contentColor = if (financeCurrency == "USD") Night else TextMain)) { Text("USD $") }
+                            Button(onClick = { financeCurrency = "USD" }, colors = ButtonDefaults.buttonColors(containerColor = if (financeCurrency == "USD") Cyan else PanelLight, contentColor = if (financeCurrency == "USD") Night else TextMain)) { Text("USD") }
                         }
                     }
                     item { OpportunityInput("Client / platform", financeSource, { financeSource = it }, "e.g. direct client or freelance platform") }
