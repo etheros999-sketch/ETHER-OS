@@ -551,7 +551,7 @@ private fun EtherApp() {
                 ConnectionCard("Gemini API key", if (hasGeminiKey) "Saved on device" else "Not configured")
                 Text(aiStatus, color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
                 Spacer(Modifier.height(8.dp))
-                Text("Privacy and cost: the key is encrypted at rest using Android Keystore, but an API key used directly by a mobile app is not as secure as a private backend. Confirm free-tier access and limits in your Google project. ETHER does not automatically switch to a paid provider.", color = TextMuted, fontSize = 11.sp, lineHeight = 17.sp)
+                Text("Privacy and cost: the key is encrypted at rest using Android Keystore, but an API key used directly by a mobile app is not as secure as a private backend. Free-tier access and quotas can change. If billing is enabled, requests beyond free quota may be charged; for strict zero-cost use, do not enable billing. ETHER does not switch to another provider automatically.", color = TextMuted, fontSize = 11.sp, lineHeight = 17.sp)
             }
             Screen.ABOUT -> {
                 Text("ABOUT ETHER", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
