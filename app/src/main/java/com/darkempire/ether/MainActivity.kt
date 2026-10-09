@@ -2,6 +2,7 @@ package com.darkempire.ether
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -14,6 +15,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,9 +53,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.util.Locale
 import java.time.format.DateTimeFormatter
@@ -78,7 +83,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections")
 }
 
 @Composable
@@ -86,9 +91,14 @@ private fun EtherApp() {
     var screen by remember { mutableStateOf(Screen.HOME) }
     var clock by remember { mutableStateOf(LocalTime.now()) }
     var draft by remember { mutableStateOf("") }
-    var messages by remember { mutableStateOf(listOf("ETHER prototype ready. AI is not connected yet.")) }
+    var messages by remember { mutableStateOf(listOf("ETHER is ready. Add a Gemini API key in AI Setup to enable real AI replies.")) }
     var notice by remember { mutableStateOf("SYSTEM ONLINE · PROTOTYPE MODE") }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var apiKeyDraft by remember { mutableStateOf("") }
+    var hasGeminiKey by remember { mutableStateOf(ApiKeyVault.hasKey(context)) }
+    var aiStatus by remember { mutableStateOf(if (hasGeminiKey) "Gemini key saved on this device." else "AI is not connected.") }
+    var sending by remember { mutableStateOf(false) }
     var micPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
@@ -233,7 +243,7 @@ private fun EtherApp() {
 
         Spacer(Modifier.height(24.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Screen.values().forEach { item ->
                 TextButton(
                     onClick = { screen = item },
@@ -326,16 +336,38 @@ private fun EtherApp() {
                     )
                     Button(
                         onClick = {
-                            if (draft.isNotBlank()) {
-                                messages = messages + "You: " + draft.trim() + "\nETHER: The AI service is not connected in this prototype yet."
+                            val prompt = draft.trim()
+                            if (prompt.isNotBlank() && !sending) {
+                                messages = messages + "You: " + prompt
                                 draft = ""
+                                val apiKey = ApiKeyVault.load(context)
+                                if (apiKey.isNullOrBlank()) {
+                                    messages = messages + "ETHER: Open AI Setup and add a Gemini API key before asking me to answer."
+                                    aiStatus = "AI is not connected."
+                                } else {
+                                    sending = true
+                                    aiStatus = "Waiting for Gemini…"
+                                    coroutineScope.launch {
+                                        try {
+                                            val answer = GeminiClient.generateReply(apiKey, prompt)
+                                            messages = messages + "ETHER: " + answer
+                                            aiStatus = "Gemini responded successfully."
+                                        } catch (error: Exception) {
+                                            messages = messages + "ETHER: " + (error.message ?: "The request failed. Please try again.")
+                                            aiStatus = error.message ?: "AI request failed."
+                                        } finally {
+                                            sending = false
+                                        }
+                                    }
+                                }
                             }
                         },
+                        enabled = !sending,
                         colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
-                    ) { Text("Send") }
+                    ) { Text(if (sending) "Wait…" else "Send") }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Local prototype only · no AI request is sent", color = TextMuted, fontSize = 11.sp)
+                Text(if (hasGeminiKey) "Gemini configured · requests are sent only when you tap Send" else "No AI request is sent until a key is configured", color = TextMuted, fontSize = 11.sp)
             }
             Screen.CAPABILITIES -> {
                 Text("ETHER CAPABILITIES", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
@@ -357,10 +389,84 @@ private fun EtherApp() {
                     item { CapabilityCard("PLANNED", "Income support", "Support zero-capital business workflows; earnings cannot be guaranteed or created automatically.", false) }
                 }
             }
+            Screen.AI_SETUP -> {
+                Text("AI PROVIDER SETUP", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(10.dp))
+                Text("Connect Gemini to turn on real AI replies.", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(6.dp))
+                Text("1. Tap Get API key. 2. Create a key in Google AI Studio. 3. Return here, paste it, and tap Save key.", color = TextMuted, fontSize = 13.sp, lineHeight = 19.sp)
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.google.com/apikey"))) },
+                    colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                ) { Text("Get a Gemini API key") }
+                Spacer(Modifier.height(12.dp))
+                Text("API KEY", color = Cyan, fontSize = 11.sp, letterSpacing = 1.5.sp)
+                Spacer(Modifier.height(6.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(14.dp)) {
+                    BasicTextField(
+                        value = apiKeyDraft,
+                        onValueChange = { apiKeyDraft = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextMain, fontSize = 14.sp),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                        visualTransformation = PasswordVisualTransformation(),
+                        decorationBox = { inner ->
+                            if (apiKeyDraft.isEmpty()) Text("Paste API key here", color = TextMuted)
+                            inner()
+                        }
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                        onClick = {
+                            try {
+                                ApiKeyVault.save(context, apiKeyDraft)
+                                apiKeyDraft = ""
+                                hasGeminiKey = true
+                                aiStatus = "Key saved on this device. Test the connection before chatting."
+                            } catch (error: Exception) {
+                                aiStatus = error.message ?: "Could not save the key."
+                            }
+                        },
+                        enabled = apiKeyDraft.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
+                    ) { Text("Save key") }
+                    TextButton(onClick = {
+                        val key = ApiKeyVault.load(context)
+                        if (key.isNullOrBlank()) {
+                            aiStatus = "Save a Gemini API key first."
+                        } else {
+                            aiStatus = "Testing Gemini connection…"
+                            coroutineScope.launch {
+                                try {
+                                    val answer = GeminiClient.generateReply(key, "Reply with exactly: ETHER connection test successful.")
+                                    hasGeminiKey = true
+                                    aiStatus = "Connection successful. Gemini replied: " + answer.take(140)
+                                } catch (error: Exception) {
+                                    aiStatus = error.message ?: "Connection test failed."
+                                }
+                            }
+                        }
+                    }) { Text("Test connection", color = Cyan) }
+                }
+                TextButton(onClick = {
+                    ApiKeyVault.clear(context)
+                    apiKeyDraft = ""
+                    hasGeminiKey = false
+                    aiStatus = "Gemini key removed from this device."
+                }) { Text("Remove saved key", color = TextMuted) }
+                Spacer(Modifier.height(8.dp))
+                ConnectionCard("Gemini API key", if (hasGeminiKey) "Saved on device" else "Not configured")
+                Text(aiStatus, color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Privacy and cost: the key is encrypted at rest using Android Keystore, but an API key used directly by a mobile app is not as secure as a private backend. Confirm free-tier access and limits in your Google project. ETHER does not automatically switch to a paid provider.", color = TextMuted, fontSize = 11.sp, lineHeight = 17.sp)
+            }
             Screen.CONNECTIONS -> {
                 Text("CONNECTION CENTRE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
                 Spacer(Modifier.height(14.dp))
-                ConnectionCard("AI provider", "Not connected")
+                ConnectionCard("AI provider", if (hasGeminiKey) "Key saved · test to verify" else "Not connected")
                 ConnectionCard("YouTube", "Not connected")
                 ConnectionCard("TikTok", "Not connected")
                 ConnectionCard("Google services", "Not connected")
