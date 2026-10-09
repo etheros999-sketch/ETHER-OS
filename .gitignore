@@ -1,0 +1,28 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+local.properties
+secrets.properties
+*.keystore
+*.jks
+*.p12
+*.pem
+credentials.json
+token.json
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Android / Gradle
+.gradle/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin / Java
+*.class
