@@ -732,8 +732,8 @@ private fun ConnectionCard(name: String, status: String) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(name, color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Text(status, color = TextMuted, fontSize = 12.sp)
+            Text(name, modifier = Modifier.weight(1f), color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(status, modifier = Modifier.padding(start = 8.dp), color = TextMuted, fontSize = 12.sp)
         }
     }
 }
