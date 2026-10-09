@@ -17,6 +17,7 @@ A fresh, voice-first personal AI assistant project with a JARVIS-inspired Androi
 - Messages can be copied to the phone clipboard, and Speak reads the latest ETHER response.
 - The local Business Workspace saves ideas/tasks on the phone and supports marking complete or deleting them.
 - Content Studio can draft short-form video scripts/captions with Gemini, then copy or save drafts locally; it does not publish to social accounts.
+- Video Automation saves the niche, output format (long, short, or both), and target platforms locally, and can generate a production blueprint with Gemini. It does not yet render/export MP4s or publish automatically.
 - Work Finder can open a public web search, save a listing pasted by the user, analyse requirements and risks with Gemini, draft a tailored proposal, and track the opportunity locally. It does not scrape job sites or submit applications automatically.
 - Earnings & Payout Tracker records expected/received amounts in GHS or USD, client/platform source, and intended payout route. It is a ledger only; it does not receive, convert, transfer, or withdraw money.
 - The About screen identifies the creator as Emperor Lucian / Lucian / Alexander Ntow (one person) and Dark Empire Leadership.
@@ -45,4 +46,4 @@ Do not paste API keys into chat or commit them to GitHub. For a public productio
 ## Current status
 Early Android prototype. Gemini chat requires the user's own configured API key and a successful connection test. This is not yet a production release.
 
-See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) for the initial scope.
+See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) for the initial scope and [docs/VIDEO_AUTOMATION_PLAN.md](docs/VIDEO_AUTOMATION_PLAN.md) for the autonomous video production roadmap.
