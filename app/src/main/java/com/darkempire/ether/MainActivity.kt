@@ -83,12 +83,7 @@ private fun EtherApp() {
         }
     }
 
-    val greeting = when (clock.hour) {
-        in 5..11 -> "Good morning, Dark Emperor."
-        in 12..16 -> "Good afternoon, Dark Emperor."
-        in 17..21 -> "Good evening, Dark Emperor."
-        else -> "Still here, Dark Emperor?"
-    }
+    val greeting = greetingForHour(clock.hour)
 
     Column(
         modifier = Modifier
