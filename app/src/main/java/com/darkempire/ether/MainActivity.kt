@@ -47,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -381,7 +382,7 @@ private fun EtherApp() {
                     item { CapabilityCard("READY", "Local time and greeting", "Uses the phone's clock and selects a greeting for the current hour.", true) }
                     item { CapabilityCard("READY", "Voice input", "Requests microphone permission and puts recognised speech into editable text when supported by the device.", true) }
                     item { CapabilityCard("READY", "Spoken status", "Uses Android text-to-speech to read ETHER's prototype status aloud.", true) }
-                    item { CapabilityCard("IN PROGRESS", "AI conversations", "Real AI is not connected yet; chat currently displays a prototype response.", false) }
+                    item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "AI conversations", if (hasGeminiKey) "A Gemini key is saved on this device. Test the connection in AI Setup before use." else "Add your own Gemini API key in AI Setup to enable real replies.", hasGeminiKey) }
                     item { CapabilityCard("PLANNED", "Free AI provider switching", "Try configured free providers in order, handle limits, and never use paid APIs without approval.", false) }
                     item { CapabilityCard("PLANNED", "Gmail and Google Calendar", "Connect through official sign-in and permissions before carrying out approved tasks.", false) }
                     item { CapabilityCard("PLANNED", "YouTube and TikTok", "Authorise each account and add supported publishing and management actions.", false) }
