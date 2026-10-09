@@ -25,7 +25,7 @@ A fresh, voice-first personal AI assistant project with a JARVIS-inspired Androi
 ## Before using Gemini
 1. Open **AI Setup** in ETHER and tap **Get a Gemini API key**.
 2. Create a key in Google AI Studio, then return to ETHER and save it.
-3. Check the project's free-tier eligibility, limits, and billing settings. Availability and terms can change; do not assume API usage is unlimited or always free.
+3. Check the project's free-tier eligibility, limits, and billing settings. Availability and terms can change. If billing is enabled, usage beyond free quotas may be charged; for strict zero-cost use, do not enable billing.
 4. Tap **Test connection**. Only then try a normal assistant message.
 
 Do not paste API keys into chat or commit them to GitHub. For a public production app, move provider credentials behind a trusted backend rather than embedding them in a mobile client.
