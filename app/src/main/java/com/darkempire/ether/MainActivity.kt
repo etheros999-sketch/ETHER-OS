@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), OPPORTUNITIES("Work Finder"), MONEY("Money"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), VIDEO_AUTOMATION("Video Automation"), OPPORTUNITIES("Work Finder"), MONEY("Money"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
 }
 
 @Composable
@@ -106,6 +106,11 @@ private fun EtherApp() {
     var workspaceDraft by remember { mutableStateOf("") }
     var workspaceTasks by remember { mutableStateOf(WorkspaceStore.load(context)) }
     var contentTopic by remember { mutableStateOf("") }
+    var videoNiche by remember { mutableStateOf(context.getSharedPreferences("ether_video_automation", Context.MODE_PRIVATE).getString("niche", "") ?: "") }
+    var videoFormat by remember { mutableStateOf(context.getSharedPreferences("ether_video_automation", Context.MODE_PRIVATE).getString("format", "Both long + short") ?: "Both long + short") }
+    var videoTargets by remember { mutableStateOf(context.getSharedPreferences("ether_video_automation", Context.MODE_PRIVATE).getString("targets", "YouTube + TikTok") ?: "YouTube + TikTok") }
+    var videoBlueprint by remember { mutableStateOf("") }
+    var generatingVideoPlan by remember { mutableStateOf(false) }
     var contentDraft by remember { mutableStateOf("") }
     var generatingContent by remember { mutableStateOf(false) }
     var opportunityTitle by remember { mutableStateOf("") }
@@ -489,6 +494,146 @@ private fun EtherApp() {
                     }
                 }
             }
+            Screen.VIDEO_AUTOMATION -> {
+                Text("AUTONOMOUS VIDEO FACTORY", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Set the rules once. Build towards automatic production.", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("This setup saves your niche and publishing targets on this phone. It can generate a detailed production blueprint with Gemini, but automatic MP4 rendering and publishing are not connected yet.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(10.dp))
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    item {
+                        OpportunityInput("Channel niche / topic", videoNiche, { videoNiche = it }, "e.g. practical technology and AI tools", minLines = 2)
+                    }
+                    item {
+                        Text("VIDEO OUTPUT", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("Both long + short", "Long videos", "Shorts only").forEach { option ->
+                                Button(
+                                    onClick = { videoFormat = option },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (videoFormat == option) Cyan else PanelLight,
+                                        contentColor = if (videoFormat == option) Night else TextMain
+                                    )
+                                ) { Text(option, fontSize = 10.sp) }
+                            }
+                        }
+                    }
+                    item {
+                        Text("PUBLISHING TARGETS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("YouTube + TikTok", "YouTube first").forEach { option ->
+                                Button(
+                                    onClick = { videoTargets = option },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (videoTargets == option) Cyan else PanelLight,
+                                        contentColor = if (videoTargets == option) Night else TextMain
+                                    )
+                                ) { Text(option, fontSize = 11.sp) }
+                            }
+                        }
+                    }
+                    item {
+                        Button(
+                            onClick = {
+                                context.getSharedPreferences("ether_video_automation", Context.MODE_PRIVATE).edit()
+                                    .putString("niche", videoNiche.trim())
+                                    .putString("format", videoFormat)
+                                    .putString("targets", videoTargets)
+                                    .apply()
+                                notice = "Video business settings saved on this phone."
+                            },
+                            enabled = videoNiche.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                        ) { Text("Save channel settings") }
+                    }
+                    item {
+                        Button(
+                            onClick = {
+                                val key = ApiKeyVault.load(context)
+                                if (key.isNullOrBlank()) {
+                                    videoBlueprint = "Open AI Setup and add a Gemini API key before generating the production blueprint."
+                                } else if (videoNiche.isNotBlank() && !generatingVideoPlan) {
+                                    generatingVideoPlan = true
+                                    videoBlueprint = "Building the production blueprint…"
+                                    coroutineScope.launch {
+                                        try {
+                                            videoBlueprint = GeminiClient.generateReply(
+                                                key,
+                                                "Act as ETHER's faceless video-business production planner. Create a practical, original, evidence-aware production package for this niche: " +
+                                                    videoNiche.trim() + ". Required output format: " + videoFormat + ". Publishing targets: " + videoTargets + ". " +
+                                                    "If both long and short are selected, provide a complete 5-8 minute YouTube video package and a separate 30-60 second vertical Short/TikTok cutdown based on the same idea. " +
+                                                    "Include: 3 topic ideas ranked by audience value, title options, opening hook, complete narration script, scene-by-scene visual and B-roll directions, on-screen text, narration tone, " +
+                                                    "caption/subtitle guidance, thumbnail concept and image-generation prompt, description, hashtags, call to action, factual checks, copyright/licensing checks, and a final quality-control checklist. " +
+                                                    "Do not claim that a video file was rendered, exported, uploaded, scheduled, or published. Clearly label this as a production blueprint. Avoid invented facts and suggest checking claims against reliable sources."
+                                            )
+                                        } catch (error: Exception) {
+                                            videoBlueprint = error.message ?: "Could not create the blueprint. Please try again."
+                                        } finally {
+                                            generatingVideoPlan = false
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = videoNiche.isNotBlank() && !generatingVideoPlan,
+                            colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
+                        ) { Text(if (generatingVideoPlan) "Planning…" else "Generate production blueprint") }
+                    }
+                    item {
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.capcut.com/"))) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                        ) { Text("Open CapCut to test AI video maker") }
+                    }
+                    item {
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://developers.google.com/youtube/v3/docs/videos/insert"))) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                        ) { Text("YouTube upload API requirements") }
+                    }
+                    item {
+                        Button(
+                            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://developers.tiktok.com/docs/en/content-posting-api-get-started"))) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                        ) { Text("TikTok publishing API requirements") }
+                    }
+                    item {
+                        Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Text("AUTOMATION STATUS", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text("Configured locally: niche, output format, target platforms.", color = TextMain, fontSize = 12.sp)
+                                Text("Still required: real video-rendering integration, secure backend, account OAuth, publishing API approvals, background scheduler, and end-to-end tests.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                                Text("YouTube API projects that have not passed audit may upload videos as private. TikTok's unaudited Direct Post clients are restricted to private visibility.", color = TextMuted, fontSize = 11.sp, lineHeight = 16.sp)
+                            }
+                        }
+                    }
+                    if (videoBlueprint.isNotBlank()) {
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+                                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("PRODUCTION BLUEPRINT", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text(videoBlueprint, color = TextMain, fontSize = 12.sp, lineHeight = 18.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        TextButton(onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("ETHER video production blueprint", videoBlueprint))
+                                            notice = "Production blueprint copied."
+                                        }) { Text("Copy", color = Cyan) }
+                                        TextButton(onClick = {
+                                            val updated = listOf(WorkspaceTask(System.currentTimeMillis(), "VIDEO PRODUCTION BLUEPRINT\n\n" + videoBlueprint, false)) + workspaceTasks
+                                            workspaceTasks = updated
+                                            WorkspaceStore.save(context, updated)
+                                            notice = "Production blueprint saved to Business Workspace."
+                                        }, enabled = !generatingVideoPlan && !videoBlueprint.startsWith("Open AI Setup") && !videoBlueprint.startsWith("Could not create")) { Text("Save to Workspace", color = Cyan) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Screen.OPPORTUNITIES -> {
                 Text("WORK FINDER", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
                 Spacer(Modifier.height(6.dp))
@@ -821,6 +966,7 @@ private fun EtherApp() {
                     item { CapabilityCard("READY", "GHS / USD earnings tracker", "Track expected and received income, source, and intended payout route. Does not move money.", true) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Work Finder", "Save public job listings, assess fit and risks, draft tailored proposals, and track opportunities locally. Automatic platform scraping and applications are not enabled.", hasGeminiKey) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Content Studio", "Draft short-form video scripts and captions with Gemini, then copy or save them locally. Publishing is not connected.", hasGeminiKey) }
+                    item { CapabilityCard("IN PROGRESS", "Video Automation", "Save a niche and targets, and generate a long + short production blueprint. Automatic rendering and publishing still require provider integrations and approvals.", false) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "AI conversations", if (hasGeminiKey) "A Gemini key is saved on this device. Test the connection in AI Setup before use." else "Add your own Gemini API key in AI Setup to enable real replies.", hasGeminiKey) }
                     item { CapabilityCard("PLANNED", "Free AI provider switching", "Try configured free providers in order, handle limits, and never use paid APIs without approval.", false) }
                     item { CapabilityCard("PLANNED", "Gmail and Google Calendar", "Connect through official sign-in and permissions before carrying out approved tasks.", false) }
