@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), OPPORTUNITIES("Work Finder"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
 }
 
 @Composable
@@ -107,6 +107,14 @@ private fun EtherApp() {
     var contentTopic by remember { mutableStateOf("") }
     var contentDraft by remember { mutableStateOf("") }
     var generatingContent by remember { mutableStateOf(false) }
+    var opportunityTitle by remember { mutableStateOf("") }
+    var opportunityPlatform by remember { mutableStateOf("Other / direct client") }
+    var opportunityBudget by remember { mutableStateOf("") }
+    var opportunityUrl by remember { mutableStateOf("") }
+    var opportunityDetails by remember { mutableStateOf("") }
+    var opportunityProposal by remember { mutableStateOf("") }
+    var analyzingOpportunity by remember { mutableStateOf(false) }
+    var opportunities by remember { mutableStateOf(OpportunityStore.load(context)) }
     var sending by remember { mutableStateOf(false) }
     var micPermission by remember {
         mutableStateOf(
@@ -474,6 +482,157 @@ private fun EtherApp() {
                     }
                 }
             }
+            Screen.OPPORTUNITIES -> {
+                Text("WORK FINDER", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(6.dp))
+                Text("Find work, prepare a proposal, track the job.", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Paste a public listing or customer request. This version helps evaluate it and draft a proposal; it does not scrape websites or submit bids automatically.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(8.dp))
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        OpportunityInput("Job / request title", opportunityTitle, { opportunityTitle = it }, "e.g. Write 5 short video scripts")
+                    }
+                    item {
+                        OpportunityInput("Platform / client source", opportunityPlatform, { opportunityPlatform = it }, "e.g. TikTok, Upwork, direct client")
+                    }
+                    item {
+                        OpportunityInput("Advertised budget (optional)", opportunityBudget, { opportunityBudget = it }, "e.g. $25 or GHS 300")
+                    }
+                    item {
+                        OpportunityInput("Public listing URL (optional)", opportunityUrl, { opportunityUrl = it }, "Paste the listing link")
+                    }
+                    item {
+                        OpportunityInput("Requirements / listing text", opportunityDetails, { opportunityDetails = it }, "Paste the job description and deadline…", minLines = 4)
+                    }
+                    item {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Button(
+                                onClick = {
+                                    val title = opportunityTitle.trim()
+                                    if (title.isNotEmpty()) {
+                                        val saved = Opportunity(
+                                            id = System.currentTimeMillis(),
+                                            title = title,
+                                            platform = opportunityPlatform.trim().ifBlank { "Other / direct client" },
+                                            budget = opportunityBudget.trim(),
+                                            url = opportunityUrl.trim(),
+                                            details = opportunityDetails.trim()
+                                        )
+                                        opportunities = listOf(saved) + opportunities
+                                        OpportunityStore.save(context, opportunities)
+                                        opportunityProposal = ""
+                                        opportunityTitle = ""
+                                        opportunityBudget = ""
+                                        opportunityUrl = ""
+                                        opportunityDetails = ""
+                                        notice = "Opportunity saved. Review it before applying."
+                                    }
+                                },
+                                enabled = opportunityTitle.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(containerColor = PanelLight, contentColor = TextMain)
+                            ) { Text("Save job") }
+                            Button(
+                                onClick = {
+                                    val key = ApiKeyVault.load(context)
+                                    if (key.isNullOrBlank()) {
+                                        opportunityProposal = "Open AI Setup and add a Gemini API key before generating a proposal."
+                                    } else if (opportunityTitle.isNotBlank() && !analyzingOpportunity) {
+                                        analyzingOpportunity = true
+                                        opportunityProposal = "Reviewing opportunity and drafting proposal…"
+                                        coroutineScope.launch {
+                                            try {
+                                                opportunityProposal = GeminiClient.generateReply(
+                                                    key,
+                                                    "Act as ETHER's freelance work analyst. Review this opportunity and prepare a truthful proposal. " +
+                                                        "Do not claim experience, credentials, portfolio items, or past results that were not supplied. " +
+                                                        "Return: (1) fit score out of 10 with reasons, (2) missing information or red flags, " +
+                                                        "(3) a concise tailored proposal, (4) questions to ask the client, (5) a realistic delivery checklist, " +
+                                                        "(6) a pricing suggestion only if enough information is available. " +
+                                                        "Warn about requests for upfront fees, off-platform payment demands, free test work that is too large, " +
+                                                        "and suspicious links. Do not promise guaranteed results. " +
+                                                        "Title: ${opportunityTitle.trim()}\nSource: ${opportunityPlatform.trim()}\nBudget: ${opportunityBudget.trim()}\n" +
+                                                        "URL: ${opportunityUrl.trim()}\nListing: ${opportunityDetails.trim()}"
+                                                )
+                                            } catch (error: Exception) {
+                                                opportunityProposal = error.message ?: "Could not draft a proposal. Please try again."
+                                            } finally {
+                                                analyzingOpportunity = false
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = opportunityTitle.isNotBlank() && !analyzingOpportunity,
+                                colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
+                            ) { Text(if (analyzingOpportunity) "Working…" else "Analyse + draft") }
+                        }
+                    }
+                    if (opportunityProposal.isNotBlank()) {
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("AI REVIEW / PROPOSAL", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text(opportunityProposal, color = TextMain, fontSize = 13.sp, lineHeight = 19.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        TextButton(onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("ETHER proposal", opportunityProposal))
+                                            notice = "Proposal copied to clipboard."
+                                        }) { Text("Copy", color = Cyan) }
+                                        TextButton(onClick = {
+                                            val updated = listOf(WorkspaceTask(System.currentTimeMillis(), "Freelance proposal: ${opportunityTitle.trim()}\n\n$opportunityProposal", false)) + workspaceTasks
+                                            workspaceTasks = updated
+                                            WorkspaceStore.save(context, updated)
+                                            notice = "Proposal saved to Business Workspace."
+                                        }, enabled = !opportunityProposal.startsWith("Open AI Setup") && !opportunityProposal.startsWith("Could not draft")) { Text("Save proposal", color = Cyan) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Text("SAVED OPPORTUNITIES (${opportunities.size})", color = Cyan, fontSize = 11.sp, letterSpacing = 1.5.sp)
+                    }
+                    items(opportunities, key = { it.id }) { item ->
+                        Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(item.status.uppercase(Locale.ROOT), color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(item.title, color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text("${item.platform} · ${item.budget.ifBlank { "Budget not stated" }}", color = TextMuted, fontSize = 12.sp)
+                                if (item.details.isNotBlank()) Text(item.details.take(240), color = TextMuted, fontSize = 12.sp, lineHeight = 17.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    TextButton(onClick = {
+                                        opportunityTitle = item.title
+                                        opportunityPlatform = item.platform
+                                        opportunityBudget = item.budget
+                                        opportunityUrl = item.url
+                                        opportunityDetails = item.details
+                                        screen = Screen.OPPORTUNITIES
+                                        notice = "Opportunity loaded into the form."
+                                    }) { Text("Edit / review", color = Cyan) }
+                                    TextButton(onClick = {
+                                        val updated = opportunities.map { if (it.id == item.id) it.copy(status = if (it.status == "New") "Reviewed" else "New") else it }
+                                        opportunities = updated
+                                        OpportunityStore.save(context, updated)
+                                    }) { Text(if (item.status == "New") "Mark reviewed" else "Mark new", color = TextMuted) }
+                                    TextButton(onClick = {
+                                        opportunities = opportunities.filterNot { it.id == item.id }
+                                        OpportunityStore.save(context, opportunities)
+                                        notice = "Opportunity removed."
+                                    }) { Text("Delete", color = TextMuted) }
+                                }
+                                if (item.url.isNotBlank()) {
+                                    TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) }) {
+                                        Text("Open listing", color = Cyan)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Screen.WORKSPACE -> {
                 Text("BUSINESS WORKSPACE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
                 Spacer(Modifier.height(8.dp))
@@ -553,6 +712,7 @@ private fun EtherApp() {
                     item { CapabilityCard("READY", "Voice input", "Requests microphone permission and puts recognised speech into editable text when supported by the device.", true) }
                     item { CapabilityCard("READY", "Spoken status", "Uses Android text-to-speech to read ETHER's prototype status aloud.", true) }
                     item { CapabilityCard("READY", "Business workspace", "Save ideas and tasks locally, mark them done, and delete them. No external actions are performed.", true) }
+                    item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Work Finder", "Save public job listings, assess fit and risks, draft tailored proposals, and track opportunities locally. Automatic platform scraping and applications are not enabled.", hasGeminiKey) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Content Studio", "Draft short-form video scripts and captions with Gemini, then copy or save them locally. Publishing is not connected.", hasGeminiKey) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "AI conversations", if (hasGeminiKey) "A Gemini key is saved on this device. Test the connection in AI Setup before use." else "Add your own Gemini API key in AI Setup to enable real replies.", hasGeminiKey) }
                     item { CapabilityCard("PLANNED", "Free AI provider switching", "Try configured free providers in order, handle limits, and never use paid APIs without approval.", false) }
@@ -738,6 +898,35 @@ private fun ConnectionCard(name: String, status: String) {
     }
 }
 
+
+@Composable
+private fun OpportunityInput(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    minLines: Int = 1
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label.uppercase(Locale.ROOT), color = TextMuted, fontSize = 10.sp, letterSpacing = 1.sp)
+        Box(
+            modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(12.dp)).padding(12.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                minLines = minLines,
+                textStyle = androidx.compose.ui.text.TextStyle(color = TextMain, fontSize = 13.sp, lineHeight = 18.sp),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                decorationBox = { inner ->
+                    if (value.isEmpty()) Text(placeholder, color = TextMuted, fontSize = 13.sp)
+                    inner()
+                }
+            )
+        }
+    }
+}
 
 @Composable
 private fun CapabilityCard(status: String, title: String, description: String, ready: Boolean) {
