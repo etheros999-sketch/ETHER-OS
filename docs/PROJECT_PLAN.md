@@ -34,9 +34,10 @@ Create a new Android-first, voice-first personal AI assistant for Emperor Lucian
 1. **Foundation:** select Kotlin/Jetpack Compose or another explicitly chosen framework; document supported Android versions.
 2. **UI prototype:** home screen, chat view, settings, connection centre.
 3. **Core interaction:** text chat, speech controls, local-time-aware greeting, copy response.
-4. **AI provider:** secure configuration, request/error handling, usage limits.
-5. **First OAuth integration:** select one service and complete its developer-console setup.
-6. **Quality:** unit/UI tests, accessibility pass, build workflow, release notes, debug APK artifact.
+4. **AI provider:** initial Gemini REST integration with Android Keystore-encrypted local key, explicit send/test actions, and understandable HTTP error handling. Production deployment should use a trusted backend for credentials.
+5. **Local business workspace:** add persistent ideas/tasks and report drafts without performing external financial actions.
+6. **First OAuth integration:** select one service and complete its developer-console setup with user consent.
+7. **Quality:** unit/UI tests, accessibility pass, build workflow, release notes, debug APK artifact.
 
 ## Acceptance criteria for the first prototype
 - The app launches to a coherent dark home screen.
@@ -50,7 +51,8 @@ Create a new Android-first, voice-first personal AI assistant for Emperor Lucian
 ## Decisions still needed
 - App framework and build environment.
 - Minimum Android version and whether iOS is in scope.
-- AI provider and voice services.
+- Gmail, Calendar, YouTube, and TikTok developer setup and user authorisation.
+- A trusted backend for production AI credential management.
 - Which single OAuth integration to implement first.
 
 ## Out of scope for the initial prototype
