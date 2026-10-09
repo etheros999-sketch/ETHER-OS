@@ -10,15 +10,30 @@ A fresh, voice-first personal AI assistant project with a JARVIS-inspired Androi
 - Require explicit approval for spending, purchases, subscriptions, ad spend, or inventory commitments.
 - Never commit API keys, OAuth secrets, passwords, or tokens.
 
-## First milestones
-1. Choose the app framework and supported Android version.
-2. Build the dark home screen and navigation.
-3. Add chat and voice controls.
-4. Add settings and a connection centre.
-5. Integrate one service at a time using official OAuth flows.
-6. Add tests and a reproducible Android build workflow.
+## Current build (Android)
+- Dark home screen with device-local time and time-aware greeting.
+- Voice input using Android speech recognition, plus spoken status using Android text-to-speech.
+- Assistant chat can call Gemini after the user supplies an API key in **AI Setup**.
+- The API key is encrypted at rest with Android Keystore. A key stored on a mobile device is still less protected than a backend-held secret.
+- AI requests occur only after the user taps Send or Test connection. ETHER does not automatically fall back to paid providers.
+- Capability and connection screens honestly show what is configured versus not yet integrated.
+- Purchases, payments, subscriptions, ads, and inventory commitments remain approval-gated.
+
+## Before using Gemini
+1. Open **AI Setup** in ETHER and tap **Get a Gemini API key**.
+2. Create a key in Google AI Studio, then return to ETHER and save it.
+3. Check the project's free-tier eligibility, limits, and billing settings. Availability and terms can change; do not assume API usage is unlimited or always free.
+4. Tap **Test connection**. Only then try a normal assistant message.
+
+Do not paste API keys into chat or commit them to GitHub. For a public production app, move provider credentials behind a trusted backend rather than embedding them in a mobile client.
+
+## Still not integrated
+- Gmail and Google Calendar OAuth.
+- YouTube and TikTok OAuth/publishing.
+- Full autonomous business execution, scheduling, and cross-provider fallback.
+- A trusted backend for production AI credential management.
 
 ## Current status
-Repository bootstrap only. No production features or integrations are claimed to be working yet.
+Early Android prototype. Gemini chat requires the user's own configured API key and a successful connection test. This is not yet a production release.
 
 See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) for the initial scope.
