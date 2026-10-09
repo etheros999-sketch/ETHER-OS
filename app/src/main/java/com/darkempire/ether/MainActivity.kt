@@ -544,11 +544,7 @@ private fun EtherApp() {
                                         opportunities = listOf(saved) + opportunities
                                         OpportunityStore.save(context, opportunities)
                                         opportunityProposal = ""
-                                        opportunityTitle = ""
-                                        opportunityBudget = ""
-                                        opportunityUrl = ""
-                                        opportunityDetails = ""
-                                        notice = "Opportunity saved. Review it before applying."
+                                        notice = "Opportunity saved. You can now analyse it and draft a proposal."
                                     }
                                 },
                                 enabled = opportunityTitle.isNotBlank(),
