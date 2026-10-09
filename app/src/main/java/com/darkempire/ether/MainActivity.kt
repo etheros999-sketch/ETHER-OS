@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
 }
 
 @Composable
@@ -104,6 +104,9 @@ private fun EtherApp() {
     var aiStatus by remember { mutableStateOf(if (hasGeminiKey) "Gemini key saved on this device." else "AI is not connected.") }
     var workspaceDraft by remember { mutableStateOf("") }
     var workspaceTasks by remember { mutableStateOf(WorkspaceStore.load(context)) }
+    var contentTopic by remember { mutableStateOf("") }
+    var contentDraft by remember { mutableStateOf("") }
+    var generatingContent by remember { mutableStateOf(false) }
     var sending by remember { mutableStateOf(false) }
     var micPermission by remember {
         mutableStateOf(
@@ -391,6 +394,85 @@ private fun EtherApp() {
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(if (hasGeminiKey) "Gemini configured · requests are sent only when you tap Send" else "No AI request is sent until a key is configured", color = TextMuted, fontSize = 11.sp)
+            }
+            Screen.STUDIO -> {
+                Text("CONTENT STUDIO", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Create a YouTube Short or TikTok script.", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("This drafts content only. It does not publish anything or connect to your social accounts.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(10.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(12.dp)) {
+                    BasicTextField(
+                        value = contentTopic,
+                        onValueChange = { contentTopic = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextMain, fontSize = 14.sp),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                        decorationBox = { inner ->
+                            if (contentTopic.isEmpty()) Text("Enter a topic, e.g. electrical safety tips…", color = TextMuted)
+                            inner()
+                        }
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        val topic = contentTopic.trim()
+                        val key = ApiKeyVault.load(context)
+                        if (key.isNullOrBlank()) {
+                            contentDraft = "Open AI Setup and add your Gemini API key before generating content."
+                        } else if (topic.isNotBlank() && !generatingContent) {
+                            generatingContent = true
+                            contentDraft = "Creating a draft…"
+                            coroutineScope.launch {
+                                try {
+                                    contentDraft = GeminiClient.generateReply(
+                                        key,
+                                        "Create a ready-to-record YouTube Short / TikTok vertical-video script about: $topic. " +
+                                            "Return: 3 title options, a strong first-2-second hook, a 30-45 second spoken script, " +
+                                            "simple visual suggestions, a caption, 5 relevant hashtags, and a clear call to action. " +
+                                            "Keep it practical, original, beginner-friendly, and avoid invented statistics or claims."
+                                    )
+                                } catch (error: Exception) {
+                                    contentDraft = error.message ?: "Could not generate the draft. Please try again."
+                                } finally {
+                                    generatingContent = false
+                                }
+                            }
+                        }
+                    },
+                    enabled = contentTopic.isNotBlank() && !generatingContent,
+                    colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
+                ) { Text(if (generatingContent) "Generating…" else "Generate script") }
+                if (contentDraft.isNotBlank()) {
+                    Spacer(Modifier.height(10.dp))
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(16.dp)) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text("DRAFT", color = Cyan, fontSize = 11.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                                    Text(contentDraft, color = TextMain, fontSize = 13.sp, lineHeight = 20.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        TextButton(onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("ETHER content draft", contentDraft))
+                                            notice = "Content draft copied to clipboard."
+                                        }) { Text("Copy draft", color = Cyan) }
+                                        TextButton(onClick = {
+                                            val updated = listOf(WorkspaceTask(System.currentTimeMillis(), "CONTENT DRAFT — " + contentDraft, false)) + workspaceTasks
+                                            workspaceTasks = updated
+                                            WorkspaceStore.save(context, updated)
+                                            notice = "Draft saved to Business Workspace."
+                                        }, enabled = !generatingContent && !contentDraft.startsWith("Open AI Setup") && !contentDraft.startsWith("Could not generate")) { Text("Save draft", color = Cyan) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             Screen.WORKSPACE -> {
                 Text("BUSINESS WORKSPACE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
