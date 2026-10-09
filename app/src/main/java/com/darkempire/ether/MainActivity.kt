@@ -64,6 +64,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.util.Locale
+import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 
 private val Night = Color(0xFF070B14)
@@ -87,7 +88,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), OPPORTUNITIES("Work Finder"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), STUDIO("Studio"), OPPORTUNITIES("Work Finder"), MONEY("Money"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
 }
 
 @Composable
@@ -115,6 +116,12 @@ private fun EtherApp() {
     var opportunityProposal by remember { mutableStateOf("") }
     var analyzingOpportunity by remember { mutableStateOf(false) }
     var opportunities by remember { mutableStateOf(OpportunityStore.load(context)) }
+    var financeDescription by remember { mutableStateOf("") }
+    var financeAmount by remember { mutableStateOf("") }
+    var financeCurrency by remember { mutableStateOf("GHS") }
+    var financeSource by remember { mutableStateOf("") }
+    var financePayoutMethod by remember { mutableStateOf("Bank / mobile money") }
+    var financeEntries by remember { mutableStateOf(FinanceStore.load(context)) }
     var sending by remember { mutableStateOf(false) }
     var micPermission by remember {
         mutableStateOf(
@@ -633,6 +640,96 @@ private fun EtherApp() {
                     }
                 }
             }
+            Screen.MONEY -> {
+                Text("EARNINGS & PAYOUT TRACKER", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(6.dp))
+                Text("Track money owed, received, and how you plan to withdraw it.", color = TextMain, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("This is a ledger only. It does not receive, transfer, convert, or withdraw money.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(8.dp))
+                val pendingGhs = financeEntries.filter { !it.received && it.currency == "GHS" }.sumOf { it.amount }
+                val receivedGhs = financeEntries.filter { it.received && it.currency == "GHS" }.sumOf { it.amount }
+                val pendingUsd = financeEntries.filter { !it.received && it.currency == "USD" }.sumOf { it.amount }
+                val receivedUsd = financeEntries.filter { it.received && it.currency == "USD" }.sumOf { it.amount }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(12.dp)) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("RECEIVED", color = TextMuted, fontSize = 10.sp)
+                            Text("GHS " + NumberFormat.getNumberInstance(Locale.US).format(receivedGhs), color = Cyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text("USD " + NumberFormat.getNumberInstance(Locale.US).format(receivedUsd), color = Cyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(12.dp)) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("STILL OWED", color = TextMuted, fontSize = 10.sp)
+                            Text("GHS " + NumberFormat.getNumberInstance(Locale.US).format(pendingGhs), color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text("USD " + NumberFormat.getNumberInstance(Locale.US).format(pendingUsd), color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item { OpportunityInput("Income / job description", financeDescription, { financeDescription = it }, "e.g. 3 video scripts for client") }
+                    item { OpportunityInput("Amount", financeAmount, { financeAmount = it }, "e.g. 150 or 25.50") }
+                    item {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { financeCurrency = "GHS" }, colors = ButtonDefaults.buttonColors(containerColor = if (financeCurrency == "GHS") Cyan else PanelLight, contentColor = if (financeCurrency == "GHS") Night else TextMain)) { Text("GHS ₵") }
+                            Button(onClick = { financeCurrency = "USD" }, colors = ButtonDefaults.buttonColors(containerColor = if (financeCurrency == "USD") Cyan else PanelLight, contentColor = if (financeCurrency == "USD") Night else TextMain)) { Text("USD $") }
+                        }
+                    }
+                    item { OpportunityInput("Client / platform", financeSource, { financeSource = it }, "e.g. direct client or freelance platform") }
+                    item { OpportunityInput("Payout route", financePayoutMethod, { financePayoutMethod = it }, "e.g. Ghana bank, MTN MoMo, Payoneer") }
+                    item {
+                        Button(
+                            onClick = {
+                                val amount = financeAmount.trim().replace(",", "").toDoubleOrNull()
+                                if (financeDescription.isNotBlank() && amount != null && amount > 0) {
+                                    val entry = FinanceEntry(
+                                        id = System.currentTimeMillis(),
+                                        description = financeDescription.trim(),
+                                        amount = amount,
+                                        currency = financeCurrency,
+                                        source = financeSource.trim(),
+                                        payoutMethod = financePayoutMethod.trim()
+                                    )
+                                    financeEntries = listOf(entry) + financeEntries
+                                    FinanceStore.save(context, financeEntries)
+                                    financeDescription = ""
+                                    financeAmount = ""
+                                    financeSource = ""
+                                    notice = "Earnings entry saved. Mark it received only after the money arrives."
+                                }
+                            },
+                            enabled = financeDescription.isNotBlank() && (financeAmount.trim().replace(",", "").toDoubleOrNull() ?: 0.0) > 0,
+                            colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
+                        ) { Text("Save earnings entry") }
+                    }
+                    item { Text("PAYMENT RECORDS (${financeEntries.size})", color = Cyan, fontSize = 11.sp, letterSpacing = 1.5.sp) }
+                    items(financeEntries, key = { it.id }) { entry ->
+                        Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(if (entry.received) "RECEIVED" else "PENDING PAYMENT", color = if (entry.received) Cyan else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(entry.description, color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text("${entry.currency} " + NumberFormat.getNumberInstance(Locale.US).format(entry.amount), color = Cyan, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                if (entry.source.isNotBlank()) Text("Source: ${entry.source}", color = TextMuted, fontSize = 12.sp)
+                                if (entry.payoutMethod.isNotBlank()) Text("Payout plan: ${entry.payoutMethod}", color = TextMuted, fontSize = 12.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextButton(onClick = {
+                                        financeEntries = financeEntries.map { if (it.id == entry.id) it.copy(received = !it.received) else it }
+                                        FinanceStore.save(context, financeEntries)
+                                    }) { Text(if (entry.received) "Mark unpaid" else "Mark received", color = Cyan) }
+                                    TextButton(onClick = {
+                                        financeEntries = financeEntries.filterNot { it.id == entry.id }
+                                        FinanceStore.save(context, financeEntries)
+                                    }) { Text("Delete", color = TextMuted) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Screen.WORKSPACE -> {
                 Text("BUSINESS WORKSPACE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
                 Spacer(Modifier.height(8.dp))
@@ -712,6 +809,7 @@ private fun EtherApp() {
                     item { CapabilityCard("READY", "Voice input", "Requests microphone permission and puts recognised speech into editable text when supported by the device.", true) }
                     item { CapabilityCard("READY", "Spoken status", "Uses Android text-to-speech to read ETHER's prototype status aloud.", true) }
                     item { CapabilityCard("READY", "Business workspace", "Save ideas and tasks locally, mark them done, and delete them. No external actions are performed.", true) }
+                    item { CapabilityCard("READY", "GHS / USD earnings tracker", "Track expected and received income, source, and intended payout route. Does not move money.", true) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Work Finder", "Save public job listings, assess fit and risks, draft tailored proposals, and track opportunities locally. Automatic platform scraping and applications are not enabled.", hasGeminiKey) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Content Studio", "Draft short-form video scripts and captions with Gemini, then copy or save them locally. Publishing is not connected.", hasGeminiKey) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "AI conversations", if (hasGeminiKey) "A Gemini key is saved on this device. Test the connection in AI Setup before use." else "Add your own Gemini API key in AI Setup to enable real replies.", hasGeminiKey) }
