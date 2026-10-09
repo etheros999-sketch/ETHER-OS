@@ -553,6 +553,7 @@ private fun EtherApp() {
                     item { CapabilityCard("READY", "Voice input", "Requests microphone permission and puts recognised speech into editable text when supported by the device.", true) }
                     item { CapabilityCard("READY", "Spoken status", "Uses Android text-to-speech to read ETHER's prototype status aloud.", true) }
                     item { CapabilityCard("READY", "Business workspace", "Save ideas and tasks locally, mark them done, and delete them. No external actions are performed.", true) }
+                    item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "Content Studio", "Draft short-form video scripts and captions with Gemini, then copy or save them locally. Publishing is not connected.", hasGeminiKey) }
                     item { CapabilityCard(if (hasGeminiKey) "CONFIGURED" else "NEEDS SETUP", "AI conversations", if (hasGeminiKey) "A Gemini key is saved on this device. Test the connection in AI Setup before use." else "Add your own Gemini API key in AI Setup to enable real replies.", hasGeminiKey) }
                     item { CapabilityCard("PLANNED", "Free AI provider switching", "Try configured free providers in order, handle limits, and never use paid APIs without approval.", false) }
                     item { CapabilityCard("PLANNED", "Gmail and Google Calendar", "Connect through official sign-in and permissions before carrying out approved tasks.", false) }
