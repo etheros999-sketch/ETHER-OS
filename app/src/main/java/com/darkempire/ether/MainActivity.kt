@@ -354,6 +354,13 @@ private fun EtherApp() {
                         onClick = {
                             val prompt = draft.trim()
                             if (prompt.isNotBlank() && !sending) {
+                                val history = messages.mapNotNull { line ->
+                                    when {
+                                        line.startsWith("You:") -> "user" to line.removePrefix("You:").trim()
+                                        line.startsWith("ETHER:") -> "model" to line.removePrefix("ETHER:").trim()
+                                        else -> null
+                                    }
+                                }.takeLast(12)
                                 messages = messages + "You: " + prompt
                                 draft = ""
                                 val apiKey = ApiKeyVault.load(context)
