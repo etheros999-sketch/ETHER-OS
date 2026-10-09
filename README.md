@@ -17,6 +17,8 @@ A fresh, voice-first personal AI assistant project with a JARVIS-inspired Androi
 - Messages can be copied to the phone clipboard, and Speak reads the latest ETHER response.
 - The local Business Workspace saves ideas/tasks on the phone and supports marking complete or deleting them.
 - Content Studio can draft short-form video scripts/captions with Gemini, then copy or save drafts locally; it does not publish to social accounts.
+- Work Finder can open a public web search, save a listing pasted by the user, analyse requirements and risks with Gemini, draft a tailored proposal, and track the opportunity locally. It does not scrape job sites or submit applications automatically.
+- Earnings & Payout Tracker records expected/received amounts in GHS or USD, client/platform source, and intended payout route. It is a ledger only; it does not receive, convert, transfer, or withdraw money.
 - The About screen identifies the creator as Emperor Lucian / Lucian / Alexander Ntow (one person) and Dark Empire Leadership.
 - The API key is encrypted at rest with Android Keystore. A key stored on a mobile device is still less protected than a backend-held secret.
 - AI requests occur only after the user taps Send or Test connection. ETHER does not automatically fall back to paid providers.
@@ -36,6 +38,8 @@ Do not paste API keys into chat or commit them to GitHub. For a public productio
 - YouTube and TikTok OAuth/publishing.
 - Full autonomous business execution, scheduling, and cross-provider fallback.
 - Gmail/Calendar/YouTube/TikTok account linking is not implemented yet and will require official app configuration and user authorisation.
+- Autonomous job monitoring, compliant marketplace APIs, proposal submission, contract handling, invoicing, payment-provider integrations, and scheduled business runs still need implementation and platform approval where required.
+- Marketplace automation must use each platform's permitted APIs and approved scopes; do not scrape private data, automate logins, spam proposals, or bypass anti-bot controls.
 - A trusted backend for production AI credential management.
 
 ## Current status
