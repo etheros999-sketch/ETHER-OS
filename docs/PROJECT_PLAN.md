@@ -39,6 +39,11 @@ Create a new Android-first, voice-first personal AI assistant for Emperor Lucian
 - Connect only payment services that support the user's country and verified account. Payout credentials and identity checks must be completed by the user with the provider.
 - Keep a clear ledger; never present ledger entries as actual bank or mobile-money balances.
 
+## Video automation extension
+- The app includes a Video Automation screen for saving a channel niche, choosing long/short/both formats, selecting YouTube/TikTok targets, and generating a production blueprint with Gemini.
+- This is not yet end-to-end automation: rendering/export, OAuth, publishing APIs, backend scheduling, and provider-confirmed status checks remain to be built.
+- Follow [VIDEO_AUTOMATION_PLAN.md](VIDEO_AUTOMATION_PLAN.md) for architecture, platform limitations, and milestones.
+
 ## Suggested delivery sequence
 1. **Foundation:** select Kotlin/Jetpack Compose or another explicitly chosen framework; document supported Android versions.
 2. **UI prototype:** home screen, chat view, settings, connection centre.
