@@ -2,6 +2,9 @@ package com.darkempire.ether
 
 import android.Manifest
 import android.content.Intent
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -84,7 +87,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections")
 }
 
 @Composable
@@ -99,6 +102,8 @@ private fun EtherApp() {
     var apiKeyDraft by remember { mutableStateOf("") }
     var hasGeminiKey by remember { mutableStateOf(ApiKeyVault.hasKey(context)) }
     var aiStatus by remember { mutableStateOf(if (hasGeminiKey) "Gemini key saved on this device." else "AI is not connected.") }
+    var workspaceDraft by remember { mutableStateOf("") }
+    var workspaceTasks by remember { mutableStateOf(WorkspaceStore.load(context)) }
     var sending by remember { mutableStateOf(false) }
     var micPermission by remember {
         mutableStateOf(
@@ -285,12 +290,12 @@ private fun EtherApp() {
                             if (speechReady) {
                                 textToSpeech.language = Locale.getDefault()
                                 textToSpeech.speak(
-                                    "ETHER is ready. Your voice has been captured locally, but the AI service is not connected yet.",
+                                    messages.lastOrNull { it.startsWith("ETHER:") }?.removePrefix("ETHER:")?.trim().orEmpty().ifBlank { "ETHER is ready. Configure Gemini in AI Setup to enable AI replies." },
                                     TextToSpeech.QUEUE_FLUSH,
                                     null,
                                     "ether-prototype-status"
                                 )
-                                voiceNotice = "Speaking prototype status. AI is still offline."
+                                voiceNotice = "Speaking the latest ETHER reply or status."
                             } else {
                                 voiceNotice = "Speech engine is starting. Please try Speak again shortly."
                             }
@@ -316,7 +321,17 @@ private fun EtherApp() {
                             colors = CardDefaults.cardColors(containerColor = Panel),
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text(message, color = TextMain, modifier = Modifier.padding(14.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(message, color = TextMain, modifier = Modifier.weight(1f).padding(vertical = 6.dp))
+                                TextButton(onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("ETHER message", message))
+                                    notice = "Message copied to clipboard."
+                                }) { Text("Copy", color = Cyan, fontSize = 11.sp) }
+                            }
                         }
                     }
                 }
@@ -369,6 +384,72 @@ private fun EtherApp() {
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(if (hasGeminiKey) "Gemini configured · requests are sent only when you tap Send" else "No AI request is sent until a key is configured", color = TextMuted, fontSize = 11.sp)
+            }
+            Screen.WORKSPACE -> {
+                Text("BUSINESS WORKSPACE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Capture ideas and organise your next steps.", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Saved locally on this phone. ETHER will not create accounts, publish content, or spend money from this screen.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(12.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(12.dp)) {
+                    BasicTextField(
+                        value = workspaceDraft,
+                        onValueChange = { workspaceDraft = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextMain, fontSize = 14.sp),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                        decorationBox = { inner ->
+                            if (workspaceDraft.isEmpty()) Text("Add an idea or task…", color = TextMuted)
+                            inner()
+                        }
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        val title = workspaceDraft.trim()
+                        if (title.isNotEmpty()) {
+                            val updated = listOf(WorkspaceTask(System.currentTimeMillis(), title, false)) + workspaceTasks
+                            workspaceTasks = updated
+                            WorkspaceStore.save(context, updated)
+                            workspaceDraft = ""
+                            notice = "Workspace item saved on this phone."
+                        }
+                    },
+                    enabled = workspaceDraft.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Night)
+                ) { Text("Save idea / task") }
+                Spacer(Modifier.height(10.dp))
+                if (workspaceTasks.isEmpty()) {
+                    Text("No items yet. Try: Draft 3 YouTube Shorts about electrical safety.", color = TextMuted, fontSize = 13.sp)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(workspaceTasks, key = { it.id }) { task ->
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(if (task.done) "COMPLETED" else "OPEN", color = if (task.done) Cyan else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text(task.title, color = if (task.done) TextMuted else TextMain, fontSize = 14.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        TextButton(onClick = {
+                                            val updated = workspaceTasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }
+                                            workspaceTasks = updated
+                                            WorkspaceStore.save(context, updated)
+                                        }) { Text(if (task.done) "Reopen" else "Mark done", color = Cyan) }
+                                        TextButton(onClick = {
+                                            val updated = workspaceTasks.filterNot { it.id == task.id }
+                                            workspaceTasks = updated
+                                            WorkspaceStore.save(context, updated)
+                                            notice = "Workspace item deleted."
+                                        }) { Text("Delete", color = TextMuted) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             Screen.CAPABILITIES -> {
                 Text("ETHER CAPABILITIES", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
@@ -519,7 +600,7 @@ private fun HomeScreen(greeting: String, notice: String, onAction: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Text("Foundation prototype", color = TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(5.dp))
-                Text("Interface scaffold is in place. AI, microphone, speech playback and account connections still need implementation.", color = TextMuted, fontSize = 13.sp, lineHeight = 19.sp)
+                Text("Voice input and spoken status work on supported devices. Gemini chat needs a configured key; Google and social accounts are not connected yet.", color = TextMuted, fontSize = 13.sp, lineHeight = 19.sp)
                 Spacer(Modifier.height(14.dp))
                 Button(
                     onClick = onAction,
