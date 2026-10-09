@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Screen(val label: String) {
-    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections")
+    HOME("Home"), CHAT("Assistant"), AI_SETUP("AI Setup"), WORKSPACE("Workspace"), CAPABILITIES("Capabilities"), CONNECTIONS("Connections"), ABOUT("About")
 }
 
 @Composable
@@ -552,6 +552,22 @@ private fun EtherApp() {
                 Text(aiStatus, color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
                 Spacer(Modifier.height(8.dp))
                 Text("Privacy and cost: the key is encrypted at rest using Android Keystore, but an API key used directly by a mobile app is not as secure as a private backend. Confirm free-tier access and limits in your Google project. ETHER does not automatically switch to a paid provider.", color = TextMuted, fontSize = 11.sp, lineHeight = 17.sp)
+            }
+            Screen.ABOUT -> {
+                Text("ABOUT ETHER", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(12.dp))
+                Text("CREATOR", color = TextMuted, fontSize = 11.sp, letterSpacing = 1.5.sp)
+                Text("Emperor Lucian", color = TextMain, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+                Text("Also known as Lucian and Alexander Ntow — one person, not separate identities.", color = TextMuted, fontSize = 13.sp, lineHeight = 19.sp)
+                Spacer(Modifier.height(12.dp))
+                ConnectionCard("Organisation / leadership", "Dark Empire Leadership")
+                Text("THE VISION", color = Cyan, fontSize = 11.sp, letterSpacing = 1.5.sp)
+                Text("ETHER is being built as a voice-first personal AI assistant to help with learning, planning, organisation, content creation, and carefully controlled business experiments.", color = TextMain, fontSize = 14.sp, lineHeight = 21.sp)
+                Spacer(Modifier.height(10.dp))
+                Text("PRINCIPLES", color = Cyan, fontSize = 11.sp, letterSpacing = 1.5.sp)
+                Text("Tell the truth about what works. Explain things simply. Prefer practical steps and zero-cost options when possible. Never claim a task succeeded without confirmation. Never spend money or make financial commitments without explicit approval.", color = TextMuted, fontSize = 13.sp, lineHeight = 20.sp)
+                Spacer(Modifier.height(10.dp))
+                Text("This is an early build. Some integrations still require development, account authorisation, or API setup.", color = TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
             }
             Screen.CONNECTIONS -> {
                 Text("CONNECTION CENTRE", color = Cyan, fontSize = 12.sp, letterSpacing = 2.sp)
