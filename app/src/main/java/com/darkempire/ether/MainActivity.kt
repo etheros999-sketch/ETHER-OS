@@ -365,7 +365,7 @@ private fun EtherApp() {
                                     aiStatus = "Waiting for Gemini…"
                                     coroutineScope.launch {
                                         try {
-                                            val answer = GeminiClient.generateReply(apiKey, prompt)
+                                            val answer = GeminiClient.generateReply(apiKey, prompt, history)
                                             messages = messages + "ETHER: " + answer
                                             aiStatus = "Gemini responded successfully."
                                         } catch (error: Exception) {
