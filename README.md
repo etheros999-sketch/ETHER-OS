@@ -16,6 +16,7 @@ A fresh, voice-first personal AI assistant project with a JARVIS-inspired Androi
 - Assistant chat can call Gemini after the user supplies an API key in **AI Setup**; recent turns are sent as conversation context.
 - Messages can be copied to the phone clipboard, and Speak reads the latest ETHER response.
 - The local Business Workspace saves ideas/tasks on the phone and supports marking complete or deleting them.
+- Content Studio can draft short-form video scripts/captions with Gemini, then copy or save drafts locally; it does not publish to social accounts.
 - The About screen identifies the creator as Emperor Lucian / Lucian / Alexander Ntow (one person) and Dark Empire Leadership.
 - The API key is encrypted at rest with Android Keystore. A key stored on a mobile device is still less protected than a backend-held secret.
 - AI requests occur only after the user taps Send or Test connection. ETHER does not automatically fall back to paid providers.
