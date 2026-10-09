@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-debug-apk:
@@ -35,10 +35,25 @@ jobs:
       - name: Run unit tests
         run: gradle --no-daemon testDebugUnitTest
 
-      - name: Upload debug APK
+      - name: Prepare public APK download
+        run: cp app/build/outputs/apk/debug/app-debug.apk ETHER-debug.apk
+
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ETHER-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: ETHER-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish APK as a public GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ether-build-${{ github.run_number }}
+          name: ETHER build ${{ github.run_number }}
+          body: |
+            Automated ETHER Android debug build.
+            This is a testing APK, not a production-signed release.
+          files: ETHER-debug.apk
+          make_latest: true
