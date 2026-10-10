@@ -36,13 +36,13 @@ jobs:
         run: gradle --no-daemon testDebugUnitTest
 
       - name: Prepare public APK download
-        run: cp app/build/outputs/apk/debug/app-debug.apk ETHER-debug.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ETHER.apk
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ETHER-debug-apk
-          path: ETHER-debug.apk
+          name: ETHER-apk
+          path: ETHER.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -55,5 +55,5 @@ jobs:
           body: |
             Automated ETHER Android debug build.
             This is a testing APK, not a production-signed release.
-          files: ETHER-debug.apk
+          files: ETHER.apk
           make_latest: true
