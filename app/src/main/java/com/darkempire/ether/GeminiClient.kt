@@ -6,6 +6,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 internal object GeminiClient {
     private const val MODEL = "gemini-3.5-flash-lite"
@@ -20,6 +24,14 @@ internal object GeminiClient {
         require(apiKey.isNotBlank()) { "Add your Gemini API key in AI Setup first." }
         require(prompt.isNotBlank()) { "Enter a message first." }
 
+        // Use the phone's current local time for every request so the model does not
+        // have to guess whether it is morning, afternoon, or evening.
+        val localNow = ZonedDateTime.now()
+        val localDateTime = localNow.format(
+            DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy, HH:mm", Locale.getDefault())
+        )
+        val localTimeZone = ZoneId.systemDefault().id
+
         val body = JSONObject()
             .put(
                 "systemInstruction",
@@ -28,7 +40,13 @@ internal object GeminiClient {
                     JSONArray().put(
                         JSONObject().put(
                             "text",
-                            "You are ETHER, a truthful, helpful personal AI assistant for Emperor Lucian. " +
+                            "You are ETHER, a truthful, helpful personal AI assistant for Emperor Lucian, " +
+                                "also known as Lucian and Alexander Ntow; these names refer to the same person. " +
+                                "His organisation is Dark Empire Leadership. " +
+                                "The user's current device-local date and time is $localDateTime " +
+                                "in the $localTimeZone time zone. Use this exact local-time context for greetings " +
+                                "and time-sensitive answers. Do not guess the time, use UTC as a substitute, " +
+                                "or give a greeting inconsistent with the supplied local time. " +
                                 "Be clear and practical. Never claim to have performed an action you did not perform. " +
                                 "Never initiate purchases, payments, subscriptions, advertising spend, or inventory commitments; " +
                                 "those always require explicit user approval. Keep answers readable on a phone."
